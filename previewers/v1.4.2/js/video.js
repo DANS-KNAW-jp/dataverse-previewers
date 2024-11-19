@@ -38,13 +38,14 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl) {
     const baseName = files
         .filter(item => item.dataFile.id === videoId)[0]
         .label.replace(/\.[a-z0-9]+$/i,'');
-    const regex = new RegExp(`${baseName}\\.([a-z]+)\\.vtt$`, 'i')
+    const regex = new RegExp(`${baseName}(\\.[a-z]+)?\\.vtt$`, 'i')
 
     const subtitles = files
         .filter(item => regex.test(item.label))
         .reduce((map, item) => {
             const lang = item.label.match(regex)[1];
-            map.set(lang, `${siteUrl}/api/access/datafile/${item.dataFile.id}?gbrecs=true&amp;key=93423e09-848c-47cb-a979-219dafcfa4da`);
+            const url = `${siteUrl}/api/access/datafile/${item.dataFile.id}?gbrecs=true&amp;key=93423e09-848c-47cb-a979-219dafcfa4da`;
+            map.set(url, lang);
             return map;
     }, new Map());
 
@@ -52,11 +53,15 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl) {
         .append($('<source/>').attr("src", fileUrl));
 
     let isFirst = true;
-    subtitles.forEach((url, lang) => {
-        const trackElement = $('<track/>').attr("label", lang)
-                                          .attr("kind", "subtitles")
-                                          .attr("srclang", lang)
-                                          .attr("src", url);
+    subtitles.forEach((lang, url) => {
+        const trackElement = $('<track/>')
+            .attr("kind", "subtitles")
+            .attr("src", url);
+        if (lang) {
+            trackElement
+                .attr("label", lang)
+                .attr("srclang", lang);
+        }
         if (isFirst) {
             trackElement.attr("default", true);
             isFirst = false;
