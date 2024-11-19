@@ -8,11 +8,14 @@ function translateBaseHtmlPage() {
 }
 
 function writeContent(fileUrl, file, title, authors) {
+    addStandardPreviewHeader(file, title, authors);
 
-    queryParams = new URLSearchParams(window.location.search.substring(1));
-    var versionUrl = queryParams.get("siteUrl") + "/api/datasets/"
-        + queryParams.get("datasetid") + "/versions/"
+    const queryParams = new URLSearchParams(window.location.search.substring(1));
+    const id = queryParams.get("datasetid");
+    const siteUrl = queryParams.get("siteUrl");
+    const versionUrl = `${siteUrl}/api/datasets/${id}/versions/`
         + queryParams.get("datasetversion");
+    const videoId =queryParams.get("fileid") * 1; // convert to number
 
     $.ajax({
         type: 'GET',
@@ -20,7 +23,7 @@ function writeContent(fileUrl, file, title, authors) {
         crosssite: true,
         url: versionUrl,
         success: function(data, status) {
-            writeContentAndFiles(fileUrl, file, title, authors, data.data.files, queryParams.get("siteUrl"));
+            appendVideoElements(fileUrl, videoId, data.data.files, siteUrl);
         },
         error: function(request, status, error) {
             reportFailure(
@@ -30,10 +33,13 @@ function writeContent(fileUrl, file, title, authors) {
     });
 }
 
-function writeContentAndFiles(fileUrl, file, title, authors, files, siteUrl) {
-    addStandardPreviewHeader(file, title, authors);
+function appendVideoElements(fileUrl, videoId, files, siteUrl) {
 
-    const regex = /\.([a-z]+)\.vtt$/i
+    const baseName = files
+        .filter(item => item.dataFile.id === videoId)[0]
+        .label.replace(/\.[a-z0-9]+$/i,'');
+    const regex = new RegExp(`${baseName}\\.([a-z]+)\\.vtt$`, 'i')
+
     const subtitles = files
         .filter(item => regex.test(item.label))
         .reduce((map, item) => {
