@@ -55,12 +55,7 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
     }, new Map());
 
     const trackLanguages = [...subtitles.values()]
-        .filter(value => value !== undefined)
-        .sort((a, b) => {
-            if (a.includes(b)) return -1;
-            if (b.includes(a)) return 1;
-            return a.localeCompare(b);
-        });
+        .filter(value => value !== undefined);
     const firstMatch = userLanguages.find(lang => trackLanguages.includes(lang) || trackLanguages.includes(lang.replace(/-.*/, '')));
 
     const videoElement = $("<video/>")
