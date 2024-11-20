@@ -40,29 +40,51 @@ function writeContent(fileUrl, file, title, authors) {
 
 function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
 
-    const baseName = files
-        .filter(item => item.dataFile.id === videoId)[0]
+    const baseName = files // the video file name without extension
+        .find(item => item.dataFile.id === videoId)
         .label.replace(/\.[a-z0-9]+$/i,'');
+
+    // find labels like "baseName.en.vtt", "baseName.de-CH.vtt" or "baseName.vtt"
     const regex = new RegExp(`${baseName}(\\.([-a-z]+))?\\.vtt$`, 'i')
 
+    // create a map of URLs with their (optional) language
     const subtitles = files
         .filter(item => regex.test(item.label))
         .reduce((map, item) => {
             const lang = item.label.match(regex)[2];
             const url = `${siteUrl}/api/access/datafile/${item.dataFile.id}?gbrecs=true&amp;key=93423e09-848c-47cb-a979-219dafcfa4da`;
-            map.set(url, lang);
+            map.set(lang, url);
             return map;
     }, new Map());
 
-    const trackLanguages = [...subtitles.values()]
-        .filter(value => value !== undefined);
-    const firstMatch = userLanguages.find(lang => trackLanguages.includes(lang) || trackLanguages.includes(lang.replace(/-.*/, '')));
+    // determine default track
+    let defaultTrackUrl = null;
+    let trackUrlWithoutLang = null;
+    loop: for (const lang of userLanguages) {
+        // TODO: better to have subtitles sorted with "de-CH" before "de"
+        for (const [trackLang, url] of subtitles) {
+            if (trackLang) {
+                if (trackLang === lang || trackLang.startsWith(lang.replace(/-.*/, ''))) {
+                    defaultTrackUrl = url;
+                    break loop;
+                }
+            } else {
+                trackUrlWithoutLang = url;
+            }
+        }
+    }
+    if (!defaultTrackUrl) {
+        defaultTrackUrl = trackUrlWithoutLang;
+    }
+    if (!defaultTrackUrl && subtitles) {
+        defaultTrackUrl = subtitles.values().next().value;
+    }
 
     const videoElement = $("<video/>")
         .prop("controls", true)
         .append($('<source/>').attr("src", fileUrl));
 
-    subtitles.forEach((trackLang, url) => {
+    subtitles.forEach((url, trackLang) => {
         const trackElement = $('<track/>')
             .attr("kind", "subtitles")
             .attr("src", url);
@@ -71,7 +93,7 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
                 .attr("label", trackLang)
                 .attr("srclang", trackLang);
         }
-        if (firstMatch.includes(trackLang)) {
+        if (url === defaultTrackUrl) {
             trackElement.attr("default", true);
         }
         videoElement.append(trackElement);
