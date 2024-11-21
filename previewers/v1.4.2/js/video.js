@@ -18,7 +18,7 @@ function writeContent(fileUrl, file, title, authors) {
     const videoId =queryParams.get("fileid") * 1; // converted to number
     const userLanguages = [...navigator.languages];
     const locale = queryParams.get("locale");
-    if (!userLanguages.includes(locale)) {
+    if (locale && !userLanguages.includes(locale)) {
         userLanguages.unshift(locale); // add as first element
     }
 
@@ -31,9 +31,8 @@ function writeContent(fileUrl, file, title, authors) {
             appendVideoElements(fileUrl, videoId, data.data.files, siteUrl, userLanguages);
         },
         error: function(request, status, error) {
-            reportFailure(
-                "Unable to retrieve file.",
-                status);
+            // fallback to simple video element
+            $(".preview").append($("<video/>") .prop("controls", true) .append($('<source/>').attr("src", fileUrl)))
         }
     });
 }
