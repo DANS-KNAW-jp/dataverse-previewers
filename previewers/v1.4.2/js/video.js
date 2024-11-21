@@ -53,16 +53,24 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
         .reduce((map, item) => {
             const lang = item.label.match(regex)[2];
             const url = `${siteUrl}/api/access/datafile/${item.dataFile.id}?gbrecs=true&amp;key=93423e09-848c-47cb-a979-219dafcfa4da`;
-            map.set(lang, url);
+            map.set(url, lang);
             return map;
     }, new Map());
+
+    // sort subtitles by language value, 'de-CH' before 'de'
+    const sortedSubtitles = new Map([...subtitles.entries()].sort((a, b) => {
+        if (!a[1]) return 1;
+        if (!b[1]) return -1;
+        if (a[1].startsWith(b[1])) return -1;
+        if (b[1].startsWith(a[1])) return 1;
+        return a[1].localeCompare(b[1]);
+    }));
 
     // determine default track
     let defaultTrackUrl = null;
     let trackUrlWithoutLang = null;
     loop: for (const lang of userLanguages) {
-        // TODO: better to have subtitles sorted with "de-CH" before "de"
-        for (const [trackLang, url] of subtitles) {
+        for (const [url, trackLang] of sortedSubtitles) {
             if (trackLang) {
                 if (trackLang === lang || trackLang.startsWith(lang.replace(/-.*/, ''))) {
                     defaultTrackUrl = url;
@@ -84,7 +92,7 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
         .prop("controls", true)
         .append($('<source/>').attr("src", fileUrl));
 
-    subtitles.forEach((url, trackLang) => {
+    sortedSubtitles.forEach((trackLang, url) => {
         const trackElement = $('<track/>')
             .attr("kind", "subtitles")
             .attr("src", url);
@@ -92,6 +100,8 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages) {
             trackElement
                 .attr("label", trackLang)
                 .attr("srclang", trackLang);
+        } else {
+            trackElement.attr("label", "???");
         }
         if (url === defaultTrackUrl) {
             trackElement.attr("default", true);
