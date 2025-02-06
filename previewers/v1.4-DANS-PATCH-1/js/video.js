@@ -110,7 +110,7 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages, ap
                 .attr("label", trackLang)
                 .attr("srclang", trackLang);
         } else {
-            trackElement.attr("label", "???");
+            trackElement.attr("label", "default");
         }
         console.log("url: ", url, "defaultTrackUrl: ", defaultTrackUrl);
         if (url === defaultTrackUrl) {
