@@ -79,21 +79,22 @@ function appendVideoElements(fileUrl, videoId, files, siteUrl, userLanguages, ap
     }));
 
     // determine default track
-    let defaultTrackUrl = null;
-    loop: for (const lang of userLanguages) {
-        for (const [url, trackLang] of sortedSubtitles) {
-            if (trackLang) {
-                if (trackLang === lang || trackLang.startsWith(lang.replace(/-.*/, ''))) {
-                    defaultTrackUrl = url;
-                    break loop;
+    let defaultTrackUrl = trackUrlWithoutLang; // choice of depositor
+    if (!defaultTrackUrl) {
+        // match user preferences with available subtitles
+        loop: for (const lang of userLanguages) {
+            for (const [url, trackLang] of sortedSubtitles) {
+                if (trackLang) {
+                    if (trackLang === lang || trackLang.startsWith(lang.replace(/-.*/, ''))) {
+                        defaultTrackUrl = url;
+                        break loop;
+                    }
                 }
             }
         }
     }
-    if (!defaultTrackUrl) {
-        defaultTrackUrl = trackUrlWithoutLang;
-    }
     if (!defaultTrackUrl && subtitles) {
+        // no match found, use first subtitle as default
         defaultTrackUrl = subtitles.keys().next().value;
     }
 
